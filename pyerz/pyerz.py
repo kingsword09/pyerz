@@ -25,6 +25,11 @@ DEFAULT_EXTS = ['py']
 DEFAULT_COMMENT_CHARS = (
     '#', '//'
 )
+DEFAULT_MULTILINE_COMMENT_PAIRS = (
+    ('"""', '"""'),  # Python 多行注释
+    ("'''", "'''"),  # Python 多行注释
+    ('/*', '*/')     # C 风格多行注释
+)
 
 
 def del_slash(dirs):
@@ -122,7 +127,8 @@ class CodeWriter(object):
             self, font_name='宋体',
             font_size=10.5, space_before=0.0,
             space_after=2.3, line_spacing=10.5,
-            command_chars=None, document=None
+            command_chars=None, multiline_comment_pairs=None,
+            document=None
     ):
         self.font_name = font_name
         self.font_size = font_size
@@ -130,6 +136,8 @@ class CodeWriter(object):
         self.space_after = space_after
         self.line_spacing = line_spacing
         self.command_chars = command_chars if command_chars else DEFAULT_COMMENT_CHARS
+        self.multiline_comment_pairs = multiline_comment_pairs if multiline_comment_pairs else DEFAULT_MULTILINE_COMMENT_PAIRS
+        self.current_comment_pair = None  # 当前正在处理的多行注释对
         self.document = Document(pkg_resources.resource_filename(
             'pyerz', 'template.docx'
         )) if not document else document
@@ -143,7 +151,26 @@ class CodeWriter(object):
 
     def is_comment_line(self, line):
         line = line.lstrip()  # 去除左侧缩进
-        is_comment = False
+        
+        # 检查是否在多行注释中
+        if self.current_comment_pair:
+            end_char = self.current_comment_pair[1]
+            if end_char in line:
+                self.current_comment_pair = None
+                return True
+            return True
+            
+        # 检查是否是新的多行注释开始
+        for start_char, end_char in self.multiline_comment_pairs:
+            if start_char in line:
+                if end_char in line[line.index(start_char) + len(start_char):]:
+                    # 单行内完成的多行注释
+                    return True
+                self.current_comment_pair = (start_char, end_char)
+                return True
+                
+        # 检查单行注释
+        is_comment = False    # 初始化变量
         for comment_char in self.command_chars:
             if line.startswith(comment_char):
                 is_comment = True
@@ -165,6 +192,7 @@ class CodeWriter(object):
         """
         把单个文件添加到程序文档里面
         """
+        self.current_comment_pair = None  # 重置多行注释状态
         with codecs.open(file, encoding='utf-8') as fp:
             for line in fp:
                 line = line.rstrip()
@@ -204,6 +232,14 @@ class CodeWriter(object):
     multiple=True, help='注释字符串，可以指定多个，默认为#、//'
 )
 @click.option(
+    '--multiline-comment-start', 'multiline_starts',
+    multiple=True, help='多行注释开始标记，需要与结束标记一一对应'
+)
+@click.option(
+    '--multiline-comment-end', 'multiline_ends',
+    multiple=True, help='多行注释结束标记，需要与开始标记一一对应'
+)
+@click.option(
     '--font-name', default='宋体',
     help='字体，默认为宋体'
 )
@@ -240,8 +276,8 @@ class CodeWriter(object):
 @click.option('-v', '--verbose', is_flag=True, help='打印调试信息')
 def main(
         title, indirs, exts,
-        comment_chars, font_name,
-        font_size, space_before,
+        comment_chars, multiline_starts, multiline_ends,
+        font_name, font_size, space_before,
         space_after, line_spacing,
         excludes, outfile, verbose
 ):
@@ -253,6 +289,11 @@ def main(
         comment_chars = DEFAULT_COMMENT_CHARS
     if verbose:
         logging.basicConfig(level=logging.DEBUG)
+
+    # 处理多行注释配置
+    multiline_pairs = None
+    if multiline_starts and multiline_ends and len(multiline_starts) == len(multiline_ends):
+        multiline_pairs = list(zip(multiline_starts, multiline_ends))
 
     # 第零步，把所有的路径都转换为绝对路径
     indirs = [abspath(indir) for indir in indirs]
@@ -269,6 +310,7 @@ def main(
     # 第二步，逐个把代码文件写入到docx中
     writer = CodeWriter(
         command_chars=comment_chars,
+        multiline_comment_pairs=multiline_pairs,
         font_name=font_name,
         font_size=font_size,
         space_before=space_before,

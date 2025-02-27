@@ -19,6 +19,7 @@ REQUIRED = [
     'click',
     'scandir',
     'python-docx',
+    'setuptools',  # 添加 setuptools 依赖
 ]
 
 # What packages are optional?
