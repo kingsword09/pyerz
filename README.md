@@ -27,6 +27,16 @@
 pip install pyerz
 ```
 
+本地使用：
+```shell script
+# 1. 首先创建一个虚拟环境
+python3 -m venv venv
+# 2. 激活虚拟环境
+source venv/bin/activate
+# 3. 在虚拟环境中安装项目
+pip install -e .
+```
+
 ## 背景
 
 工作中需要申请软件著作权，软件著作权需要提供以下材料：
