@@ -2,6 +2,7 @@
 import codecs
 import logging
 import pkg_resources
+import math
 from os.path import abspath
 try:
     from os import scandir
@@ -12,6 +13,7 @@ import click
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.enum.text import WD_BREAK
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +130,7 @@ class CodeWriter(object):
             font_size=10.5, space_before=0.0,
             space_after=2.3, line_spacing=10.5,
             command_chars=None, multiline_comment_pairs=None,
-            document=None
+            document=None, chars_in_line=30, insert_page=False
     ):
         self.font_name = font_name
         self.font_size = font_size
@@ -136,11 +138,15 @@ class CodeWriter(object):
         self.space_after = space_after
         self.line_spacing = line_spacing
         self.command_chars = command_chars if command_chars else DEFAULT_COMMENT_CHARS
+        self.chars_in_line = chars_in_line * 2
+        self.insert_page = insert_page
         self.multiline_comment_pairs = multiline_comment_pairs if multiline_comment_pairs else DEFAULT_MULTILINE_COMMENT_PAIRS
         self.current_comment_pair = None  # 当前正在处理的多行注释对
         self.document = Document(pkg_resources.resource_filename(
             'pyerz', 'template.docx'
         )) if not document else document
+
+        self.total_paragraph_count = 0
 
     @staticmethod
     def is_blank_line(line):
@@ -200,13 +206,28 @@ class CodeWriter(object):
                     continue
                 if self.is_comment_line(line):
                     continue
-                paragraph = self.document.add_paragraph()
-                paragraph.paragraph_format.space_before = Pt(self.space_before)
-                paragraph.paragraph_format.space_after = Pt(self.space_after)
-                paragraph.paragraph_format.line_spacing = Pt(self.line_spacing)
-                run = paragraph.add_run(line)
-                run.font.name = self.font_name
-                run.font.size = Pt(self.font_size)
+                for i in range(math.ceil(len(line)/self.chars_in_line)):
+                    paragraph = self.document.add_paragraph()
+                    start = i * self.chars_in_line
+                    remain = len(line) - start 
+                    if remain >= self.chars_in_line:
+                        line_part = line[start:start+self.chars_in_line-1]
+                    else:
+                        line_part = line[start:]
+                    
+                    paragraph.paragraph_format.space_before = Pt(self.space_before)
+                    paragraph.paragraph_format.space_after = Pt(self.space_after)
+                    paragraph.paragraph_format.line_spacing = Pt(self.line_spacing)
+                    
+                    run = paragraph.add_run(line_part)
+                    run.font.name = self.font_name
+                    run.font.size = Pt(self.font_size)
+
+                    self.total_paragraph_count += 1
+
+                    # 每 50 行增加一个分页符
+                    if self.total_paragraph_count % 50 == 0 and self.insert_page:
+                        run.add_break(WD_BREAK.PAGE)
         return self
 
     def save(self, file):
@@ -264,6 +285,11 @@ class CodeWriter(object):
     help='行距，默认为固定值10.5'
 )
 @click.option(
+    '--chars-in-line', default=30, 
+    type=click.IntRange(min=1), 
+    help='一行的字符数，中文字符（2字节），默认为30'
+)
+@click.option(
     '--exclude', 'excludes',
     multiple=True, type=click.Path(exists=True),
     help='需要排除的文件或路径，可以指定多个'
@@ -273,13 +299,15 @@ class CodeWriter(object):
     type=click.Path(exists=False),
     help='输出文件（docx格式），默认为当前目录的code.docx'
 )
+@click.option('-p', '--insert-page', is_flag=True, help='每50行插入一个分页符')
 @click.option('-v', '--verbose', is_flag=True, help='打印调试信息')
 def main(
         title, indirs, exts,
         comment_chars, multiline_starts, multiline_ends,
         font_name, font_size, space_before,
         space_after, line_spacing,
-        excludes, outfile, verbose
+        chars_in_line,
+        excludes, outfile, insert_page, verbose,
 ):
     if not indirs:
         indirs = DEFAULT_INDIRS
@@ -315,7 +343,9 @@ def main(
         font_size=font_size,
         space_before=space_before,
         space_after=space_after,
-        line_spacing=line_spacing
+        line_spacing=line_spacing,
+        chars_in_line=chars_in_line, 
+        insert_page=insert_page
     )
     writer.write_header(title)
     for file in files:
