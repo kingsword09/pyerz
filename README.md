@@ -35,6 +35,9 @@ python3 -m venv venv
 source venv/bin/activate
 # 3. 在虚拟环境中安装项目
 pip install -e .
+
+# 退出虚拟环境
+deactivate
 ```
 
 ## 背景

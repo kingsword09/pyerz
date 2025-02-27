@@ -245,6 +245,10 @@ class CodeWriter(object):
     help='软件名称+版本号，默认为软件著作权程序鉴别材料生成器V1.0，此名称用于生成页眉'
 )
 @click.option(
+    '--entry-file', type=click.Path(exists=True),
+    help='入口文件路径，将会被放在文档第一页'
+)
+@click.option(
     '-i', '--indir', 'indirs',
     multiple=True, type=click.Path(exists=True),
     help='源码所在文件夹，可以指定多个，默认为当前目录'
@@ -312,7 +316,7 @@ class CodeWriter(object):
 @click.option('-p', '--insert-page', is_flag=True, help='每50行插入一个分页符')
 @click.option('-v', '--verbose', is_flag=True, help='打印调试信息')
 def main(
-        title, indirs, exts,
+        title, indirs, exts, entry_file,
         comment_chars, multiline_starts, multiline_ends,
         font_name, font_size, space_before,
         space_after, line_spacing,
@@ -344,6 +348,14 @@ def main(
     files = [file for indir in indirs for file in finder.find(
         indir, excludes=excludes
     )]
+
+    if entry_file:
+        entry_path = abspath(entry_file)
+        # 如果入口文件在列表中，先移除它
+        if entry_path in files:
+            files.remove(entry_path)
+        # 将入口文件放在列表首位
+        files.insert(0, entry_path)
 
     # 第二步，逐个把代码文件写入到docx中
     writer = CodeWriter(
