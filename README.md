@@ -81,19 +81,24 @@ deactivate
 Usage: pyerz [OPTIONS]
 
 Options:
-  -t, --title TEXT            软件名称+版本号，默认为软件著作权程序鉴别材料生成器V1.0，此名称用于生成页眉
-  -i, --indir PATH            源码所在文件夹，可以指定多个，默认为当前目录
-  -e, --ext TEXT              源代码后缀，可以指定多个，默认为Python源代码
-  -c, --comment-char TEXT     注释字符串，可以指定多个，默认为#、//
-  --font-name TEXT            字体，默认为宋体
-  --font-size FLOAT RANGE     字号，默认为五号，即10.5号
-  --space-before FLOAT RANGE  段前间距，默认为0
-  --space-after FLOAT RANGE   段后间距，默认为2.3
-  --line-spacing FLOAT RANGE  行距，默认为固定值10.5
-  --exclude PATH              需要排除的文件或路径，可以指定多个
-  -o, --outfile PATH          输出文件（docx格式），默认为当前目录的code.docx
-  -v, --verbose               打印调试信息
-  --help                      Show this message and exit.
+  -t, --title TEXT                  软件名称+版本号，默认为软件著作权程序鉴别材料生成器V1.0，此名称用于生成页眉
+  -i, --indir PATH                  源码所在文件夹，可以指定多个，默认为当前目录
+  -e, --ext TEXT                    源代码后缀，可以指定多个，默认为Python源代码
+  -c, --comment-char TEXT           注释字符串，可以指定多个，默认为#、//
+  -p, --insert-page                 每50行插入一个分页符，默认为False
+  --entry-file TEXT                 入口文件，默认为None
+  --font-name TEXT                  字体，默认为宋体
+  --font-size FLOAT RANGE           字号，默认为五号，即10.5号
+  --space-before FLOAT RANGE        段前间距，默认为0
+  --space-after FLOAT RANGE         段后间距，默认为2.3
+  --line-spacing FLOAT RANGE        行距，默认为固定值10.5
+  --paragraph-alignment TEXT        段落对齐方式，默认为居中，可选值为left、center、right
+  --multiline-comment-start TEXT    多行注释开始标记，默认为None
+  --multiline-comment-end TEXT      多行注释结束标记，默认为None
+  --exclude PATH                    需要排除的文件或路径，可以指定多个
+  -o, --outfile PATH                输出文件（docx格式），默认为当前目录的code.docx
+  -v, --verbose                     打印调试信息
+  --help                            Show this message and exit.
 ```
 
 ### 示例
