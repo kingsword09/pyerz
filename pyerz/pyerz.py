@@ -32,6 +32,11 @@ DEFAULT_MULTILINE_COMMENT_PAIRS = (
     ("'''", "'''"),  # Python 多行注释
     ('/*', '*/')     # C 风格多行注释
 )
+ALIGNMENT_MAP = {
+    'left': WD_PARAGRAPH_ALIGNMENT.LEFT,
+    'center': WD_PARAGRAPH_ALIGNMENT.CENTER,
+    'right': WD_PARAGRAPH_ALIGNMENT.RIGHT
+}
 
 
 def del_slash(dirs):
@@ -183,12 +188,12 @@ class CodeWriter(object):
                 break
         return is_comment
 
-    def write_header(self, title):
+    def write_header(self, title, paragraph_alignment):
         """
         写入页眉
         """
         paragraph = self.document.sections[0].header.paragraphs[0]
-        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        paragraph.alignment = ALIGNMENT_MAP.get(paragraph_alignment, WD_PARAGRAPH_ALIGNMENT.CENTER)
         run = paragraph.add_run(title)
         run.font.name = self.font_name
         run.font.size = Pt(self.font_size)
@@ -275,6 +280,11 @@ class CodeWriter(object):
     help='段前间距，默认为0'
 )
 @click.option(
+    '--paragraph-alignment', default='center',
+    type=click.Choice(['left', 'center', 'right']),
+    help='段对齐方式，默认为居中对齐'
+)
+@click.option(
     '--space-after', default=2.3,
     type=click.FloatRange(min=0.0),
     help='段后间距，默认为2.3'
@@ -306,7 +316,7 @@ def main(
         comment_chars, multiline_starts, multiline_ends,
         font_name, font_size, space_before,
         space_after, line_spacing,
-        chars_in_line,
+        chars_in_line, paragraph_alignment,
         excludes, outfile, insert_page, verbose,
 ):
     if not indirs:
@@ -347,7 +357,7 @@ def main(
         chars_in_line=chars_in_line, 
         insert_page=insert_page
     )
-    writer.write_header(title)
+    writer.write_header(title, paragraph_alignment)
     for file in files:
         writer.write_file(file)
     writer.save(outfile)
