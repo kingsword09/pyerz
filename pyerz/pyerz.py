@@ -135,7 +135,8 @@ class CodeWriter(object):
             font_size=10.5, space_before=0.0,
             space_after=2.3, line_spacing=10.5,
             command_chars=None, multiline_comment_pairs=None,
-            document=None, chars_in_line=30, insert_page=False
+            document=None, chars_in_line=30, 
+            insert_page=False, max_pages=65
     ):
         self.font_name = font_name
         self.font_size = font_size
@@ -151,6 +152,7 @@ class CodeWriter(object):
             'pyerz', 'template.docx'
         )) if not document else document
 
+        self.max_lines = max_pages * 50
         self.total_paragraph_count = 0
 
     @staticmethod
@@ -230,6 +232,10 @@ class CodeWriter(object):
 
                     self.total_paragraph_count += 1
 
+                    # 检查是否达到最大行数限制
+                    if self.total_paragraph_count >= self.max_lines:
+                        return self
+
                     # 每 50 行增加一个分页符
                     if self.total_paragraph_count % 50 == 0 and self.insert_page:
                         run.add_break(WD_BREAK.PAGE)
@@ -299,6 +305,11 @@ class CodeWriter(object):
     help='行距，默认为固定值10.5'
 )
 @click.option(
+    '--max-pages', default=65,
+    type=click.IntRange(min=1),
+    help='最大页数，默认为65页'
+)
+@click.option(
     '--chars-in-line', default=30, 
     type=click.IntRange(min=1), 
     help='一行的字符数，中文字符（2字节），默认为30'
@@ -316,7 +327,7 @@ class CodeWriter(object):
 @click.option('-p', '--insert-page', is_flag=True, help='每50行插入一个分页符')
 @click.option('-v', '--verbose', is_flag=True, help='打印调试信息')
 def main(
-        title, indirs, exts, entry_file,
+        title, indirs, exts, entry_file, max_pages,
         comment_chars, multiline_starts, multiline_ends,
         font_name, font_size, space_before,
         space_after, line_spacing,
@@ -367,7 +378,8 @@ def main(
         space_after=space_after,
         line_spacing=line_spacing,
         chars_in_line=chars_in_line, 
-        insert_page=insert_page
+        insert_page=insert_page,
+        max_pages=max_pages
     )
     writer.write_header(title, paragraph_alignment)
     for file in files:

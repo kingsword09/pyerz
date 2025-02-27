@@ -87,6 +87,7 @@ Options:
   -c, --comment-char TEXT           注释字符串，可以指定多个，默认为#、//
   -p, --insert-page                 每50行插入一个分页符，默认为False
   --entry-file TEXT                 入口文件，默认为None
+  --max-pages INT RANGE             最大页数，默认为65页
   --font-name TEXT                  字体，默认为宋体
   --font-size FLOAT RANGE           字号，默认为五号，即10.5号
   --space-before FLOAT RANGE        段前间距，默认为0
